@@ -119,11 +119,6 @@
   // -------------------------------------------------------------------
   // Overall CEFR mapping
   // -------------------------------------------------------------------
-  // Overall = average of the five 0-5 construct profile scores.
-  // Thresholds are set at even intervals across the 0-5 range (0-1, 1-2,
-  // 2-3, 3-4, 4-5), nudged slightly so that a genuinely mixed profile
-  // (mostly "Developing" constructs) lands in the middle band (B1)
-  // rather than being pulled down by a single weak construct.
   const CEFR_LEVELS = [
     { code: "A1", en: "Elementary",        fa: "مقدماتی",         min: 0 },
     { code: "A2", en: "Pre-Intermediate",  fa: "پیش‌متوسط",       min: 1.2 },
@@ -248,7 +243,7 @@
           <li>هر سؤال چهار گزینه دارد و معمولاً فقط یک پاسخ درست است.</li>
           <li>با انتخاب هر گزینه، به‌طور خودکار به سؤال بعدی می‌روید.</li>
           <li>در سؤال آخر، پس از انتخاب گزینه، برای پایان آزمون روی دکمه «پایان آزمون» بزنید.</li>
-          <li>در هر لحظه می‌توانید با دکمه «سؤال قبل» به سؤال‌های قبلی برگردید و پاسخ خود را اصلاح کنید.</li>
+          <li>در هر لحظه می‌توانید با دکمه «قبلی» به سؤال‌های قبلی برگردید و پاسخ خود را اصلاح کنید.</li>
           <li>پاسخ‌ها به‌صورت خودکار و در همان لحظه بررسی می‌شوند.</li>
           <li>برای اینکه نتیجه واقعاً نشان‌دهنده سطح شما باشد، لطفاً بدون استفاده از مترجم یا کمک بیرونی پاسخ دهید.</li>
         </ul>
@@ -263,8 +258,6 @@
 
   function startTest() {
     state.testId = pickTestId();
-    // Use the shuffled version of the test. Every call returns a fresh
-    // randomized order of options across the fixed A/B/C/D labels.
     state.questions = getShuffledTest(state.testId);
     state.current = 0;
     state.answers = {};
@@ -310,9 +303,9 @@
         </div>
 
         <div class="ep-nav-row">
-          <button class="ep-btn ep-btn-ghost" id="ep-prev" ${state.current === 0 ? "disabled" : ""}>Previous</button>
+          <button class="ep-btn ep-btn-ghost" id="ep-prev" ${state.current === 0 ? "disabled" : ""}>قبلی</button>
           <button class="ep-btn ep-btn-primary" id="ep-next" ${answered === undefined ? "disabled" : ""}>
-            ${isLast ? "Finish Test" : "Next"}
+            ${isLast ? "پایان آزمون" : "بعدی"}
           </button>
         </div>
       </div>
@@ -323,18 +316,13 @@
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         state.answers[q.id] = idx;
 
-        // Cancel any pending auto-advance from a previous tap.
         if (state.advanceTimer) {
           clearTimeout(state.advanceTimer);
           state.advanceTimer = null;
         }
 
-        // Re-render so the selected option is visibly highlighted.
         render();
 
-        // Auto-advance on every question EXCEPT the final one.
-        // On the last question, the user must click "Finish Test" explicitly
-        // so they still have a chance to review or correct their choice.
         if (!isLast) {
           state.advanceTimer = setTimeout(() => {
             state.advanceTimer = null;
@@ -452,9 +440,6 @@
       .replace(/"/g, "&quot;");
   }
 
-  // -------------------------------------------------------------------
-  // Theme: follow the host site's saved preference / system preference
-  // -------------------------------------------------------------------
   (function initTheme() {
     let saved = null;
     try { saved = localStorage.getItem(STORAGE_KEY_THEME); } catch (e) {}
