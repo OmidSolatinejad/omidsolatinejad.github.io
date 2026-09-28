@@ -4,6 +4,10 @@
  * Fully client-side. No backend, no accounts, nothing leaves the browser.
  * Reuses the host site's CSS custom properties (--bg, --ink, --accent, etc.)
  * so the assessment inherits the site's light/dark theme automatically.
+ *
+ * Note: the introductory content now lives as a static section in
+ * english-test/index.html (for SEO). The app therefore starts directly
+ * on the "instructions" screen — there is no "intro" screen anymore.
  */
 (function () {
   "use strict";
@@ -29,13 +33,13 @@
   // State
   // -------------------------------------------------------------------
   const state = {
-    screen: "intro",       // intro | instructions | test | results
+    screen: "instructions", // instructions | test | results
     testId: null,
-    questions: [],         // flattened 30-question array for the chosen test
-    current: 0,            // index of current question
-    answers: {},           // { questionId: selectedOptionIndex }
+    questions: [],          // flattened 30-question array for the chosen test
+    current: 0,             // index of current question
+    answers: {},            // { questionId: selectedOptionIndex }
     hasStarted: false,
-    advanceTimer: null,    // pending auto-advance timer, if any
+    advanceTimer: null,     // pending auto-advance timer, if any
   };
 
   // -------------------------------------------------------------------
@@ -73,9 +77,6 @@
   }
 
   function bandForScore(score) {
-    // 0-5 scale. Thresholds chosen so "Strong" requires clearly
-    // above-average performance, "Needs Attention" flags a construct
-    // where fewer than half the items were answered correctly.
     if (score >= 4.0) return "strong";
     if (score >= 2.5) return "developing";
     return "needsAttention";
@@ -182,39 +183,9 @@
   const root = document.getElementById("ep-root");
 
   function render() {
-    if (state.screen === "intro") return renderIntro();
     if (state.screen === "instructions") return renderInstructions();
     if (state.screen === "test") return renderTest();
     if (state.screen === "results") return renderResults();
-  }
-
-  function renderIntro() {
-    root.innerHTML = `
-      <div class="ep-screen ep-fa" dir="rtl">
-        <h1 class="ep-title">آزمون ارزیابی سطح زبان انگلیسی</h1>
-        <p class="ep-lede">
-          این یک آزمون ارزیابی زبان انگلیسی است که چند بُعد مهم از مهارت زبانی شما — از جمله دستور زبان،
-          واژگان، درک مطلب، ارتباط کاربردی و طبیعی‌بودن زبان — را بررسی می‌کند و در پایان، یک
-          <strong>پروفایل زبانی نشان‌دهنده</strong> از عملکرد شما ارائه می‌دهد.
-        </p>
-        <p class="ep-lede">
-          نتیجه شامل یک برآورد کلی از سطح زبانی شما (بر اساس چارچوب مرجع اروپایی زبان، CEFR) و همچنین
-          عملکرد جداگانه در هر یک از پنج بُعد یادشده خواهد بود.
-        </p>
-        <p class="ep-lede">
-          <strong>این آزمون یک گواهی رسمی یا بین‌المللی نیست</strong> و جایگزین آزمون‌های معتبری مانند
-          آیلتس، تافل یا کمبریج نمی‌شود. همچنین به‌دلیل ماهیت آزمون، توانایی <strong>مکالمه</strong> شما
-          به‌صورت مستقیم و دقیق ارزیابی نمی‌شود.
-        </p>
-        <div class="ep-cta-row">
-          <button class="ep-btn ep-btn-primary" id="ep-to-instructions">ادامه</button>
-        </div>
-      </div>
-    `;
-    document.getElementById("ep-to-instructions").addEventListener("click", () => {
-      state.screen = "instructions";
-      render();
-    });
   }
 
   function renderInstructions() {
@@ -425,7 +396,7 @@
     `;
 
     document.getElementById("ep-retake").addEventListener("click", () => {
-      state.screen = "intro";
+      state.screen = "instructions";
       state.hasStarted = false;
       state.advanceTimer = null;
       render();
