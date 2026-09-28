@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>آزمون ارزیابی زبان انگلیسی | Omid Solatinejad</title>
-<meta name="description" content="آزمون ارزیابی رایگان زبان انگلیسی — دستور زبان، واژگان، درک مطلب، ارتباط کاربردی و طبیعی‌بودن زبان.">
+<meta name="description" content="آزمون ارزیابی رایگان زبان انگلیسی — دستور زبان، واژگان، درک مطلب، ارتباط کاربردی و طبیعی‌بودن زبان. تعیین سطح آنلاین با نتیجه CEFR.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow">
 <meta name="color-scheme" content="light dark">
@@ -15,10 +15,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap">
 
 <style>
-  /* ============================================================
-     Design tokens — copied from the main site so this page shares
-     the exact same palette, spacing and dark/light behavior.
-     ============================================================ */
   *, *::before, *::after { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) {
@@ -81,7 +77,6 @@
   [data-lang="fa"] .lang-en,
   [data-lang="en"] .lang-fa { display: none !important; }
 
-  /* ---------- Header ---------- */
   header.site-header {
     position: sticky; top: 0; z-index: 100;
     background: color-mix(in srgb, var(--bg) 88%, transparent);
@@ -106,10 +101,7 @@
   .brand-fa { font-size: 1.05rem; }
   .brand-en { font-size: 0.72rem; color: var(--ink-soft); font-weight: 500; letter-spacing: 0.02em; }
 
-  /* ---------- Header controls: theme toggle + back link ---------- */
-  .header-controls {
-    display: flex; align-items: center; gap: 0.75rem;
-  }
+  .header-controls { display: flex; align-items: center; gap: 0.75rem; }
 
   .icon-btn {
     width: 2.4rem; height: 2.4rem; display: flex; align-items: center; justify-content: center;
@@ -138,7 +130,6 @@
     transform: translateY(-1px);
   }
 
-  /* ---------- Footer (simple: copyright only) ---------- */
   footer.site-footer {
     border-top: 1px solid var(--line);
     padding-block: 1.75rem;
@@ -153,7 +144,6 @@
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
   }
 
-  /* ---------- Assessment screens ---------- */
   main { flex: 1; }
   .ep-wrap { max-width: var(--ep-maxw); margin: 0 auto; padding: clamp(1.5rem, 5vw, 3rem) var(--pad) 4rem; }
 
@@ -250,7 +240,29 @@
   .ep-cta-steps { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 0.9rem 1rem; margin: 0.5rem 0 1.25rem 0; color: var(--ink-soft); }
   .ep-cta-btn { display: block; text-align: center; }
 
-  /* ---------- Mobile: stack back link under the brand if needed ---------- */
+  /* ---------- Static SEO intro section ---------- */
+  .seo-intro {
+    direction: rtl;
+    text-align: right;
+  }
+  .seo-intro h1 {
+    font-size: clamp(1.6rem, 1.4vw + 1.1rem, 2.1rem);
+    font-weight: 800;
+    margin: 0 0 1.1rem 0;
+  }
+  .seo-intro p {
+    color: var(--ink-soft);
+    margin: 0 0 1.1rem 0;
+    max-width: 40rem;
+  }
+  .seo-intro ul {
+    color: var(--ink-soft);
+    padding-inline-start: 1.2rem;
+    margin: 0 0 1.5rem 0;
+    display: grid;
+    gap: 0.4rem;
+  }
+
   @media (max-width: 480px) {
     .back-link {
       font-size: 0.82rem;
@@ -293,11 +305,46 @@
 
 <main>
   <div class="ep-wrap">
-    <div id="ep-root"></div>
+
+    <!-- ============================================================
+         STATIC SEO INTRO
+         This section is visible by default. Googlebot sees it even
+         before JavaScript runs. It also gives users context before
+         they start the test. Clicking the button hides it and
+         reveals the app.
+         ============================================================ -->
+    <section id="seo-intro" class="seo-intro">
+      <h1>آزمون ارزیابی زبان انگلیسی</h1>
+
+      <p>
+        این یک آزمون آنلاین و رایگان برای سنجش سطح زبان انگلیسی شماست. آزمون پنج بُعد
+        کلیدی از مهارت زبانی را بررسی می‌کند: <strong>دستور زبان</strong>،
+        <strong>واژگان</strong>، <strong>درک مطلب</strong>،
+        <strong>ارتباط کاربردی</strong> و <strong>طبیعی‌بودن زبان</strong>.
+      </p>
+
+      <p>
+        در پایان آزمون، یک برآورد کلی از سطح شما بر اساس چارچوب مرجع اروپایی زبان (CEFR)
+        — از A1 تا C1 — به همراه عملکرد جداگانه در هر یک از پنج بخش نمایش داده می‌شود.
+        این بازخورد می‌تواند به شما کمک کند نقاط قوت و ضعف خود را بهتر بشناسید و
+        مسیر یادگیری زبان را هدفمندتر ادامه دهید.
+      </p>
+
+      <p>آزمون شامل ۳۰ سؤال است و حدود ۱۵ تا ۲۰ دقیقه زمان می‌برد. برای شروع، روی دکمه زیر کلیک کنید:</p>
+
+      <div class="ep-cta-row">
+        <button class="ep-btn ep-btn-primary" id="seo-start-btn" type="button">
+          شروع آزمون
+        </button>
+      </div>
+    </section>
+
+    <!-- The app mounts here. Hidden until the user clicks Start. -->
+    <div id="ep-root" hidden></div>
 
     <noscript>
       <p style="text-align:center; color: var(--ink-soft);">
-        برای مشاهده این آزمون، لطفاً JavaScript را در مرورگر خود فعال کنید.
+        برای مشاهده و شرکت در این آزمون، لطفاً JavaScript را در مرورگر خود فعال کنید.
       </p>
     </noscript>
   </div>
@@ -354,6 +401,22 @@
   var ye = document.getElementById("year-en");
   if (yf) yf.textContent = y;
   if (ye) ye.textContent = y;
+
+  // ----- SEO intro -> app toggle -----
+  // The static intro is visible on page load (so Googlebot sees it).
+  // When the user clicks Start, we hide the intro and reveal the app root.
+  var seoIntro = document.getElementById("seo-intro");
+  var seoStartBtn = document.getElementById("seo-start-btn");
+  var epRoot = document.getElementById("ep-root");
+
+  if (seoStartBtn && seoIntro && epRoot) {
+    seoStartBtn.addEventListener("click", function () {
+      seoIntro.hidden = true;
+      epRoot.hidden = false;
+      // Scroll to top of the app so the user sees the first screen.
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
 })();
 </script>
 </body>
