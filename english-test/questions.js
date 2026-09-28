@@ -23,6 +23,16 @@
  * CEFR distribution per construct (A1, A2, B1, B1, B2, C1), so the five
  * forms are built to be as comparable as reasonably possible without
  * claiming formal psychometric equivalence.
+ *
+ * -----------------------------------------------------------------------
+ * SHUFFLING
+ * -----------------------------------------------------------------------
+ * Each question's four options are randomized on the fly by the helper
+ * functions at the bottom of this file. The correct answer is tracked
+ * and updated automatically, so it can end up in any of the four
+ * positions (A, B, C, or D) each time the test is loaded.
+ *
+ * To use: call getShuffledTest("A") instead of reading ENGLISH_PROFILE_TESTS.A directly.
  */
 
 const ENGLISH_PROFILE_TESTS = {
@@ -703,6 +713,59 @@ const ENGLISH_PROFILE_TESTS = {
   ],
 };
 
+/**
+ * -----------------------------------------------------------------------
+ * SHUFFLING HELPERS
+ * -----------------------------------------------------------------------
+ * shuffleQuestion(q)
+ *   Returns a shallow copy of the question q with its options array
+ *   randomized and correctAnswer updated to the new index of the
+ *   correct option.
+ *
+ * getShuffledTest(testId)
+ *   Returns a fresh, fully shuffled copy of a whole test form
+ *   ("A", "B", "C", "D", or "E"). Each call returns a new randomized
+ *   version — nothing is cached — so a user who reloads the test sees
+ *   a different order each time.
+ * -----------------------------------------------------------------------
+ */
+
+function shuffleQuestion(q) {
+  // Build an array of indices [0, 1, 2, 3]
+  var indices = q.options.map(function (_, i) { return i; });
+
+  // Fisher–Yates shuffle
+  for (var i = indices.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = indices[i];
+    indices[i] = indices[j];
+    indices[j] = tmp;
+  }
+
+  // Rebuild options in the shuffled order, and find where the correct
+  // option landed in the new array.
+  var newOptions = indices.map(function (i) { return q.options[i]; });
+  var newCorrect = indices.indexOf(q.correctAnswer);
+
+  // Return a shallow copy with the updated fields, leaving the original
+  // question in ENGLISH_PROFILE_TESTS untouched.
+  return Object.assign({}, q, {
+    options: newOptions,
+    correctAnswer: newCorrect
+  });
+}
+
+function getShuffledTest(testId) {
+  var original = ENGLISH_PROFILE_TESTS[testId];
+  if (!original) return [];
+  return original.map(shuffleQuestion);
+}
+
+// Optional: expose the helpers alongside the test data in Node/CommonJS
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { ENGLISH_PROFILE_TESTS };
+  module.exports = {
+    ENGLISH_PROFILE_TESTS: ENGLISH_PROFILE_TESTS,
+    shuffleQuestion: shuffleQuestion,
+    getShuffledTest: getShuffledTest
+  };
 }
