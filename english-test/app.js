@@ -257,7 +257,9 @@
 
   function startTest() {
     state.testId = pickTestId();
-    state.questions = TESTS[state.testId];
+    // Use the shuffled version of the test. Every call returns a fresh
+    // randomized order of options across the fixed A/B/C/D labels.
+    state.questions = getShuffledTest(state.testId);
     state.current = 0;
     state.answers = {};
     state.hasStarted = true;
