@@ -13,6 +13,9 @@
   const STORAGE_KEY_LAST_TEST = "ep-last-test";
   const STORAGE_KEY_THEME = "omid-theme"; // shared with the main site
 
+  // How long to keep the selected option highlighted before auto-advancing.
+  const AUTO_ADVANCE_DELAY_MS = 280;
+
   const CONSTRUCT_ORDER = ["grammar", "vocabulary", "comprehension", "functional", "naturalness"];
   const CONSTRUCT_META = {
     grammar:        { icon: "🧠", fa: "دستور زبان",              en: "Grammar" },
@@ -32,6 +35,7 @@
     current: 0,            // index of current question
     answers: {},           // { questionId: selectedOptionIndex }
     hasStarted: false,
+    advanceTimer: null,    // pending auto-advance timer, if any
   };
 
   // -------------------------------------------------------------------
@@ -242,8 +246,10 @@
         <ul class="ep-notes">
           <li>شما یکی از چند نسخه مختلف آزمون را به‌صورت تصادفی دریافت می‌کنید.</li>
           <li>هر سؤال چهار گزینه دارد و معمولاً فقط یک پاسخ درست است.</li>
+          <li>با انتخاب هر گزینه، به‌طور خودکار به سؤال بعدی می‌روید.</li>
+          <li>در سؤال آخر، پس از انتخاب گزینه، برای پایان آزمون روی دکمه «پایان آزمون» بزنید.</li>
+          <li>در هر لحظه می‌توانید با دکمه «سؤال قبل» به سؤال‌های قبلی برگردید و پاسخ خود را اصلاح کنید.</li>
           <li>پاسخ‌ها به‌صورت خودکار و در همان لحظه بررسی می‌شوند.</li>
-          <li>در پایان، هم نتیجه کلی و هم عملکرد شما در هر بخش نمایش داده می‌شود.</li>
           <li>برای اینکه نتیجه واقعاً نشان‌دهنده سطح شما باشد، لطفاً بدون استفاده از مترجم یا کمک بیرونی پاسخ دهید.</li>
         </ul>
 
@@ -264,6 +270,7 @@
     state.answers = {};
     state.hasStarted = true;
     state.screen = "test";
+    state.advanceTimer = null;
     window.addEventListener("beforeunload", beforeUnloadHandler);
     render();
   }
@@ -315,13 +322,41 @@
       btn.addEventListener("click", () => {
         const idx = parseInt(btn.getAttribute("data-index"), 10);
         state.answers[q.id] = idx;
+
+        // Cancel any pending auto-advance from a previous tap.
+        if (state.advanceTimer) {
+          clearTimeout(state.advanceTimer);
+          state.advanceTimer = null;
+        }
+
+        // Re-render so the selected option is visibly highlighted.
         render();
+
+        // Auto-advance on every question EXCEPT the final one.
+        // On the last question, the user must click "Finish Test" explicitly
+        // so they still have a chance to review or correct their choice.
+        if (!isLast) {
+          state.advanceTimer = setTimeout(() => {
+            state.advanceTimer = null;
+            state.current += 1;
+            render();
+          }, AUTO_ADVANCE_DELAY_MS);
+        }
       });
     });
+
     document.getElementById("ep-prev").addEventListener("click", () => {
+      if (state.advanceTimer) {
+        clearTimeout(state.advanceTimer);
+        state.advanceTimer = null;
+      }
       if (state.current > 0) { state.current -= 1; render(); }
     });
     document.getElementById("ep-next").addEventListener("click", () => {
+      if (state.advanceTimer) {
+        clearTimeout(state.advanceTimer);
+        state.advanceTimer = null;
+      }
       if (isLast) {
         finishTest();
       } else {
@@ -332,6 +367,10 @@
   }
 
   function finishTest() {
+    if (state.advanceTimer) {
+      clearTimeout(state.advanceTimer);
+      state.advanceTimer = null;
+    }
     window.removeEventListener("beforeunload", beforeUnloadHandler);
     state.screen = "results";
     render();
@@ -400,6 +439,7 @@
     document.getElementById("ep-retake").addEventListener("click", () => {
       state.screen = "intro";
       state.hasStarted = false;
+      state.advanceTimer = null;
       render();
     });
   }
