@@ -69,6 +69,8 @@
     line-height: 1.75;
     transition: background var(--dur) ease, color var(--dur) ease;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
   [dir="ltr"] body { line-height: 1.65; }
 
@@ -76,24 +78,20 @@
 
   .container { max-width: var(--maxw); margin: 0 auto; padding-inline: var(--pad); }
 
-  .skip-link {
-    position: absolute; top: -100px; inset-inline-start: 1rem;
-    background: var(--accent); color: #fff; padding: 0.75rem 1.25rem;
-    border-radius: var(--radius-sm); z-index: 200; transition: top var(--dur) ease;
-  }
-  .skip-link:focus { top: 1rem; }
-
   [data-lang="fa"] .lang-en,
   [data-lang="en"] .lang-fa { display: none !important; }
 
-  /* ---------- Header (identical to main site) ---------- */
+  /* ---------- Header ---------- */
   header.site-header {
     position: sticky; top: 0; z-index: 100;
     background: color-mix(in srgb, var(--bg) 88%, transparent);
     backdrop-filter: saturate(140%) blur(10px);
     border-bottom: 1px solid var(--line);
   }
-  .nav-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.9rem; }
+  .nav-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding-block: 0.9rem;
+  }
 
   .brand {
     display: inline-flex; align-items: center; gap: 0.65rem;
@@ -108,15 +106,11 @@
   .brand-fa { font-size: 1.05rem; }
   .brand-en { font-size: 0.72rem; color: var(--ink-soft); font-weight: 500; letter-spacing: 0.02em; }
 
-  nav.primary-nav ul { list-style: none; display: flex; gap: clamp(1rem, 2vw, 1.75rem); margin: 0; padding: 0; }
-  nav.primary-nav a {
-    text-decoration: none; font-size: 0.95rem; color: var(--ink-soft);
-    padding: 0.35rem 0.1rem; border-bottom: 2px solid transparent;
-    transition: color var(--dur) ease, border-color var(--dur) ease;
+  /* ---------- Header controls: theme toggle + back link ---------- */
+  .header-controls {
+    display: flex; align-items: center; gap: 0.75rem;
   }
-  nav.primary-nav a:hover, nav.primary-nav a:focus-visible { color: var(--ink); border-color: var(--accent); }
 
-  .header-controls { display: flex; align-items: center; gap: 0.5rem; }
   .icon-btn {
     width: 2.4rem; height: 2.4rem; display: flex; align-items: center; justify-content: center;
     background: transparent; border: 1px solid var(--line); border-radius: 50%; cursor: pointer;
@@ -125,58 +119,33 @@
   .icon-btn:hover { border-color: var(--accent); }
   .icon-btn svg { width: 1.1rem; height: 1.1rem; }
 
-  .lang-switch { display: flex; align-items: center; gap: 0.4rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.7rem; }
-  .lang-option {
-    border: none; background: transparent; color: var(--ink-soft); font-size: 0.85rem; font-weight: 600;
-    letter-spacing: 0.02em; cursor: pointer; padding: 0.15rem 0.15rem; transition: color var(--dur) ease;
+  .back-link {
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.55rem 1.1rem;
+    transition: color var(--dur) ease, border-color var(--dur) ease, background var(--dur) ease, transform var(--dur) ease;
+    white-space: nowrap;
   }
-  .lang-option:hover { color: var(--ink); }
-  .lang-option[aria-pressed="true"] { color: var(--accent-strong); }
-  .lang-sep { color: var(--line); font-size: 0.8rem; }
-
-  .menu-toggle { display: none; }
-
-  @media (max-width: 760px) {
-    .menu-toggle {
-      display: flex; width: 2.4rem; height: 2.4rem;
-      border: 1px solid var(--line); background: transparent;
-      border-radius: 50%; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--ink);
-    }
-    html:not([data-theme="dark"]) .menu-toggle { color: #1F2A24; }
-    @media (prefers-color-scheme: dark) {
-      html:not([data-theme="light"]) .menu-toggle { color: var(--ink); }
-    }
-    nav.primary-nav {
-      position: absolute; inset-inline: 0; top: 100%; background: var(--surface);
-      border-bottom: 1px solid var(--line); max-height: 0; overflow: hidden; transition: max-height var(--dur) ease;
-    }
-    nav.primary-nav.open { max-height: 24rem; }
-    nav.primary-nav ul { flex-direction: column; padding: 0.5rem var(--pad) 1.25rem; gap: 0.25rem; }
-    nav.primary-nav a { display: block; padding: 0.6rem 0.2rem; }
+  .back-link:hover, .back-link:focus-visible {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+    background: var(--bg-alt);
+    transform: translateY(-1px);
   }
 
-  /* ---------- Footer (identical to main site) ---------- */
+  /* ---------- Footer (simple: copyright only) ---------- */
   footer.site-footer {
-    border-top: 1px solid var(--line); padding-block: 2rem;
-    color: var(--ink-soft); font-size: 0.85rem;
-  }
-  .footer-row {
-    display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem;
-    justify-content: space-between; align-items: center;
-  }
-
-  .back-to-top {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 2.75rem; height: 2.75rem;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 50%; color: var(--ink); text-decoration: none;
-    transition: background var(--dur) ease, border-color var(--dur) ease, color var(--dur) ease, transform var(--dur) ease;
-  }
-  .back-to-top svg { width: 1.15rem; height: 1.15rem; }
-  .back-to-top:hover, .back-to-top:focus-visible {
-    background: var(--bg-alt); border-color: var(--accent);
-    color: var(--accent-strong); transform: translateY(-2px);
+    border-top: 1px solid var(--line);
+    padding-block: 1.75rem;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-top: auto;
   }
 
   .visually-hidden {
@@ -185,6 +154,7 @@
   }
 
   /* ---------- Assessment screens ---------- */
+  main { flex: 1; }
   .ep-wrap { max-width: var(--ep-maxw); margin: 0 auto; padding: clamp(1.5rem, 5vw, 3rem) var(--pad) 4rem; }
 
   .ep-screen { animation: ep-fade 220ms ease; }
@@ -279,13 +249,17 @@
   .ep-cta-question { font-weight: 700; font-size: 1.1rem; margin: 0 0 1rem 0; }
   .ep-cta-steps { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 0.9rem 1rem; margin: 0.5rem 0 1.25rem 0; color: var(--ink-soft); }
   .ep-cta-btn { display: block; text-align: center; }
+
+  /* ---------- Mobile: stack back link under the brand if needed ---------- */
+  @media (max-width: 480px) {
+    .back-link {
+      font-size: 0.82rem;
+      padding: 0.45rem 0.9rem;
+    }
+  }
 </style>
 </head>
 <body>
-<a href="#main" class="skip-link">
-  <span class="lang-fa">پرش به محتوای اصلی</span>
-  <span class="lang-en">Skip to main content</span>
-</a>
 
 <header class="site-header">
   <div class="container nav-row">
@@ -297,24 +271,7 @@
       </span>
     </a>
 
-    <nav class="primary-nav" id="primary-nav" aria-label="ناوبری اصلی">
-      <ul>
-        <li><a href="/#home"><span class="lang-fa">خانه</span><span class="lang-en">Home</span></a></li>
-        <li><a href="/#about"><span class="lang-fa">درباره من</span><span class="lang-en">About</span></a></li>
-        <li><a href="/#teaching"><span class="lang-fa">آموزش زبان</span><span class="lang-en">Teaching</span></a></li>
-        <li><a href="/#research"><span class="lang-fa">پژوهش</span><span class="lang-en">Research</span></a></li>
-        <li><a href="/dictionary/"><span class="lang-fa">دیکشنری</span><span class="lang-en">Dictionary</span></a></li>
-        <li><a href="/#profiles"><span class="lang-fa">پروفایل‌ها</span><span class="lang-en">Profiles</span></a></li>
-        <li><a href="/english-test/" aria-current="page"><span class="lang-fa">پروفایل زبان انگلیسی</span><span class="lang-en">English Profile</span></a></li>
-      </ul>
-    </nav>
-
     <div class="header-controls">
-      <div class="lang-switch" role="group" aria-label="زبان / Language">
-        <button type="button" class="lang-option" id="lang-option-fa" data-lang-option="fa" aria-pressed="true">FA</button>
-        <span class="lang-sep" aria-hidden="true">|</span>
-        <button type="button" class="lang-option" id="lang-option-en" data-lang-option="en" aria-pressed="false">EN</button>
-      </div>
       <button class="icon-btn" id="theme-toggle" type="button" aria-pressed="false">
         <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
           <circle cx="12" cy="12" r="4.2"></circle>
@@ -325,20 +282,16 @@
           <span class="lang-en">Toggle light or dark mode</span>
         </span>
       </button>
-      <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17"></path>
-        </svg>
-        <span class="visually-hidden">
-          <span class="lang-fa">باز کردن منو</span>
-          <span class="lang-en">Open menu</span>
-        </span>
-      </button>
+
+      <a href="/" class="back-link">
+        <span class="lang-fa">بازگشت به خانه</span>
+        <span class="lang-en">Back to Home</span>
+      </a>
     </div>
   </div>
 </header>
 
-<main id="main">
+<main>
   <div class="ep-wrap">
     <div id="ep-root"></div>
 
@@ -350,23 +303,9 @@
   </div>
 </main>
 
-<footer class="site-footer container">
-  <div class="footer-row">
-    <span>
-      <span class="lang-fa">© <span id="year-fa">2026</span> امید جورنالز. تمامی حقوق محفوظ است.</span>
-      <span class="lang-en">© <span id="year-en">2026</span> OmidJournals. All rights reserved.</span>
-    </span>
-    <a href="#main" class="back-to-top" aria-label="Back to top">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 19V5"></path>
-        <path d="M5 12l7-7 7 7"></path>
-      </svg>
-      <span class="visually-hidden">
-        <span class="lang-fa">بازگشت به بالا</span>
-        <span class="lang-en">Back to top</span>
-      </span>
-    </a>
-  </div>
+<footer class="site-footer">
+  <span class="lang-fa">© <span id="year-fa">2026</span> امید جورنالز. تمامی حقوق محفوظ است.</span>
+  <span class="lang-en">© <span id="year-en">2026</span> OmidJournals. All rights reserved.</span>
 </footer>
 
 <script src="questions.js"></script>
@@ -377,6 +316,17 @@
   var root = document.documentElement;
   var THEME_KEY = "omid-theme";
   var LANG_KEY = "omid-lang";
+
+  // ----- Language: inherit from main site -----
+  var savedLang = null;
+  try { savedLang = localStorage.getItem(LANG_KEY); } catch (e) {}
+  if (savedLang === "en" || savedLang === "fa") {
+    root.setAttribute("lang", savedLang);
+    root.setAttribute("dir", savedLang === "fa" ? "rtl" : "ltr");
+    root.setAttribute("data-lang", savedLang);
+  } else {
+    root.setAttribute("data-lang", "fa");
+  }
 
   // ----- Theme -----
   var savedTheme = null;
@@ -398,63 +348,7 @@
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
   });
 
-  // ----- Language -----
-  var savedLang = null;
-  try { savedLang = localStorage.getItem(LANG_KEY); } catch (e) {}
-  var langFaBtn = document.getElementById("lang-option-fa");
-  var langEnBtn = document.getElementById("lang-option-en");
-  function applyLang(lang) {
-    root.setAttribute("lang", lang);
-    root.setAttribute("dir", lang === "fa" ? "rtl" : "ltr");
-    root.setAttribute("data-lang", lang);
-    langFaBtn.setAttribute("aria-pressed", lang === "fa" ? "true" : "false");
-    langEnBtn.setAttribute("aria-pressed", lang === "en" ? "true" : "false");
-  }
-  applyLang(savedLang === "en" ? "en" : "fa");
-  function switchLang(lang) {
-    applyLang(lang);
-    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
-  }
-  langFaBtn.addEventListener("click", function () { switchLang("fa"); });
-  langEnBtn.addEventListener("click", function () { switchLang("en"); });
-
-  // ----- Mobile nav -----
-  var menuBtn = document.getElementById("menu-toggle");
-  var nav = document.getElementById("primary-nav");
-
-  function closeNav() {
-    if (nav) nav.classList.remove("open");
-    if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
-  }
-
-  menuBtn.addEventListener("click", function (e) {
-    e.stopPropagation();
-    var open = nav.classList.toggle("open");
-    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
-  });
-  nav.addEventListener("click", function (e) {
-    if (e.target.tagName === "A") {
-      closeNav();
-    } else {
-      e.stopPropagation();
-    }
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && nav.classList.contains("open")) {
-      closeNav();
-      menuBtn.focus();
-    }
-  });
-  document.addEventListener("click", function (e) {
-    if (!nav.classList.contains("open")) return;
-    if (nav.contains(e.target) || menuBtn.contains(e.target)) return;
-    closeNav();
-  });
-  window.addEventListener("scroll", function () {
-    if (nav.classList.contains("open")) closeNav();
-  }, { passive: true });
-
-  // ----- Year -----
+  // ----- Year (footer) -----
   var y = new Date().getFullYear();
   var yf = document.getElementById("year-fa");
   var ye = document.getElementById("year-en");
