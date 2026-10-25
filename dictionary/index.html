@@ -732,39 +732,58 @@
     statusEl.innerHTML = "";
   }
 
-  // --- NEW: Fetch Audio from Free Dictionary API (Prioritizing US accent) ---
+  // --- Fetch Audio via Wiktionary MediaWiki API (Filtering for US accent) ---
   async function fetchPronunciationAudio(word) {
     try {
-      // We use the Free Dictionary API for standardized audio
-      var url = "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word);
+      // 1. Get the list of all images/files on the word's page
+      var url = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(word) + "&prop=images&imlimit=max&format=json&origin=*";
       var response = await fetch(url);
       if (!response.ok) return null;
-      
       var data = await response.json();
-      if (!data || !data[0] || !data[0].phonetics) return null;
       
-      var phonetics = data[0].phonetics;
-      var audioUrl = null;
+      if (!data.query || !data.query.pages) return null;
       
-      // 1. Try to find a US accent audio first
-      for (var i = 0; i < phonetics.length; i++) {
-        if (phonetics[i].audio && phonetics[i].audio.includes("-us.mp3")) {
-          audioUrl = phonetics[i].audio;
-          break;
-        }
-      }
+      var pages = data.query.pages;
+      var audioTitles = [];
       
-      // 2. If no US accent found, just take the first available audio
-      if (!audioUrl) {
-        for (var j = 0; j < phonetics.length; j++) {
-          if (phonetics[j].audio) {
-            audioUrl = phonetics[j].audio;
-            break;
+      // 2. Find all audio files
+      for (var pageId in pages) {
+        var page = pages[pageId];
+        if (!page.images) continue;
+        
+        for (var i = 0; i < page.images.length; i++) {
+          var title = page.images[i].title;
+          if (title.match(/\.(ogg|mp3|wav)$/i)) {
+            audioTitles.push(title);
           }
         }
       }
       
-      return audioUrl;
+      if (audioTitles.length === 0) return null;
+      
+      // 3. Try to find an American accent first (usually contains "en-us" or "us")
+      var chosenTitle = audioTitles[0]; // default to first
+      for (var j = 0; j < audioTitles.length; j++) {
+        if (audioTitles[j].toLowerCase().indexOf("us") !== -1 || audioTitles[j].toLowerCase().indexOf("en-us") !== -1) {
+          chosenTitle = audioTitles[j];
+          break;
+        }
+      }
+      
+      // 4. Get the direct URL for the chosen file
+      var fileUrl = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(chosenTitle) + "&prop=imageinfo&iiprop=url&format=json&origin=*";
+      var fileRes = await fetch(fileUrl);
+      var fileData = await fileRes.json();
+      
+      if (fileData.query && fileData.query.pages) {
+        for (var fId in fileData.query.pages) {
+          var fPage = fileData.query.pages[fId];
+          if (fPage.imageinfo && fPage.imageinfo.length > 0) {
+            return fPage.imageinfo[0].url;
+          }
+        }
+      }
+      return null;
     } catch (error) {
       console.error("Audio fetch failed:", error);
       return null;
