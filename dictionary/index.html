@@ -320,9 +320,33 @@
   }
   @keyframes dict-spin { to { transform: rotate(360deg); } }
 
+  /* Word Header & Audio Button */
   .word-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin: 0; }
   .word-title { font-size: clamp(1.8rem, 2.5vw + 1rem, 2.6rem); font-weight: 800; margin: 0; }
   .word-phonetic { color: var(--ink-soft); font-size: 1.05rem; }
+  
+  .audio-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all var(--dur) ease;
+  }
+  .audio-btn:hover {
+    background: var(--bg-alt);
+    border-color: var(--accent);
+    transform: scale(1.05);
+  }
+  .audio-btn svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
 
   .pos-block { border-top: 1px solid var(--line); padding-block: 1.5rem; }
   .pos-block:first-of-type { margin-top: 1rem; }
@@ -710,7 +734,31 @@
     statusEl.innerHTML = "";
   }
 
-  function renderResult(entries, word) {
+  // --- NEW: Audio Fetching Logic ---
+  async function fetchPronunciationAudio(word) {
+    try {
+      var response = await fetch("https://en.wiktionary.org/api/rest_v1/page/media-list/" + encodeURIComponent(word));
+      if (!response.ok) return null;
+      var data = await response.json();
+      
+      if (data.items && data.items.length > 0) {
+        var audioItem = data.items.find(function(item) {
+          return item.type === "audio" || 
+                 (item.title && (item.title.endsWith(".ogg") || item.title.endsWith(".mp3")));
+        });
+        
+        if (audioItem && audioItem.srcset && audioItem.srcset.length > 0) {
+          return audioItem.srcset[0].src;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Audio fetch failed:", error);
+      return null;
+    }
+  }
+
+  function renderResult(entries, word, audioUrl) {
     if (!resultEl) return;
     clearStatus();
     resultEl.hidden = false;
@@ -718,6 +766,15 @@
     var html = "";
     html += '<div class="word-head">';
     html += '<h2 class="word-title">' + escapeHtml(word) + "</h2>";
+    
+    // Inject Audio Button if URL exists
+    if (audioUrl) {
+      html += '<audio id="dict-audio" src="' + audioUrl + '"></audio>';
+      html += '<button type="button" class="audio-btn" onclick="document.getElementById(\'dict-audio\').play()" aria-label="Play pronunciation">';
+      html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
+      html += '</button>';
+    }
+    
     html += "</div>";
 
     entries.forEach(function (block) {
@@ -787,30 +844,40 @@
 
     var endpoint = "https://en.wiktionary.org/api/rest_v1/page/definition/" + encodeURIComponent(word);
 
-    fetchWithTimeout(endpoint, 15000)
-      .then(function (res) {
-        if (res.status === 404) throw { kind: "notfound" };
-        if (!res.ok) throw { kind: "error" };
-        return res.json();
-      })
-      .then(function (data) {
-        var englishEntries = data && data.en;
-        if (!englishEntries || !englishEntries.length) {
-          throw { kind: "notfound" };
-        }
-        renderResult(englishEntries, word);
-      })
-      .catch(function (err) {
-        console.error(err);
-        if (err && err.kind === "notfound") {
-          showStatus(
-            '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16" y1="16" x2="21" y2="21"></line><line x1="8.5" y1="8.5" x2="13.5" y2="13.5"></line><line x1="13.5" y1="8.5" x2="8.5" y2="13.5"></line></svg>' +
-            "<p>" + bi("کلمه‌ای با این املا پیدا نشد. لطفاً املای آن را بررسی کنید.", "No definitions found for this word. Please check the spelling and try again.") + "</p>"
-          );
-        } else {
-          showStatus("<p>" + bi("مشکلی در دریافت اطلاعات پیش آمد. لطفاً دوباره تلاش کنید.", "Something went wrong while fetching this word. Please try again.") + "</p>");
-        }
+    // Fetch definitions and audio in parallel
+    Promise.all([
+      fetchWithTimeout(endpoint, 15000),
+      fetchPronunciationAudio(word)
+    ])
+    .then(function (results) {
+      var res = results[0];
+      var audioUrl = results[1];
+
+      if (res.status === 404) throw { kind: "notfound" };
+      if (!res.ok) throw { kind: "error" };
+      
+      return res.json().then(function(data) {
+        return { data: data, audioUrl: audioUrl };
       });
+    })
+    .then(function (payload) {
+      var englishEntries = payload.data && payload.data.en;
+      if (!englishEntries || !englishEntries.length) {
+        throw { kind: "notfound" };
+      }
+      renderResult(englishEntries, word, payload.audioUrl);
+    })
+    .catch(function (err) {
+      console.error(err);
+      if (err && err.kind === "notfound") {
+        showStatus(
+          '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16" y1="16" x2="21" y2="21"></line><line x1="8.5" y1="8.5" x2="13.5" y2="13.5"></line><line x1="13.5" y1="8.5" x2="8.5" y2="13.5"></line></svg>' +
+          "<p>" + bi("کلمه‌ای با این املا پیدا نشد. لطفاً املای آن را بررسی کنید.", "No definitions found for this word. Please check the spelling and try again.") + "</p>"
+        );
+      } else {
+        showStatus("<p>" + bi("مشکلی در دریافت اطلاعات پیش آمد. لطفاً دوباره تلاش کنید.", "Something went wrong while fetching this word. Please try again.") + "</p>");
+      }
+    });
   });
 })();
 </script>
