@@ -734,21 +734,28 @@
     statusEl.innerHTML = "";
   }
 
-  // --- NEW: Audio Fetching Logic ---
+  // --- UPDATED: Robust Audio Fetching via Wikimedia Commons ---
   async function fetchPronunciationAudio(word) {
     try {
-      var response = await fetch("https://en.wiktionary.org/api/rest_v1/page/media-list/" + encodeURIComponent(word));
+      // We query Wikimedia Commons directly for audio files matching the word
+      var url = "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:audio%20" + encodeURIComponent(word) + "&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*";
+      
+      var response = await fetch(url);
       if (!response.ok) return null;
+      
       var data = await response.json();
       
-      if (data.items && data.items.length > 0) {
-        var audioItem = data.items.find(function(item) {
-          return item.type === "audio" || 
-                 (item.title && (item.title.endsWith(".ogg") || item.title.endsWith(".mp3")));
-        });
-        
-        if (audioItem && audioItem.srcset && audioItem.srcset.length > 0) {
-          return audioItem.srcset[0].src;
+      if (data.query && data.query.pages) {
+        var pages = data.query.pages;
+        for (var key in pages) {
+          var page = pages[key];
+          if (page.imageinfo && page.imageinfo.length > 0) {
+            var fileUrl = page.imageinfo[0].url;
+            // Check if the file is actually an audio format
+            if (fileUrl.match(/\.(ogg|mp3|wav)$/i)) {
+              return fileUrl;
+            }
+          }
         }
       }
       return null;
