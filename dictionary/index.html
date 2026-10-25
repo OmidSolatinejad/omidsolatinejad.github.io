@@ -320,10 +320,8 @@
   }
   @keyframes dict-spin { to { transform: rotate(360deg); } }
 
-  /* Word Header & Audio Button */
   .word-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin: 0; }
   .word-title { font-size: clamp(1.8rem, 2.5vw + 1rem, 2.6rem); font-weight: 800; margin: 0; }
-  .word-phonetic { color: var(--ink-soft); font-size: 1.05rem; }
   
   .audio-btn {
     display: inline-flex;
@@ -734,24 +732,19 @@
     statusEl.innerHTML = "";
   }
 
-  // --- UPDATED: Robust Audio Fetching via Wikimedia Commons ---
+  // --- Audio Fetching via Wikimedia Commons ---
   async function fetchPronunciationAudio(word) {
     try {
-      // We query Wikimedia Commons directly for audio files matching the word
       var url = "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:audio%20" + encodeURIComponent(word) + "&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*";
-      
       var response = await fetch(url);
       if (!response.ok) return null;
-      
       var data = await response.json();
-      
       if (data.query && data.query.pages) {
         var pages = data.query.pages;
         for (var key in pages) {
           var page = pages[key];
           if (page.imageinfo && page.imageinfo.length > 0) {
             var fileUrl = page.imageinfo[0].url;
-            // Check if the file is actually an audio format
             if (fileUrl.match(/\.(ogg|mp3|wav)$/i)) {
               return fileUrl;
             }
@@ -765,16 +758,51 @@
     }
   }
 
-  function renderResult(entries, word, audioUrl) {
+  // --- Translation Fetching via MyMemory API ---
+  async function translateToPersian(text) {
+    if (!text) return "";
+    try {
+      var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|fa";
+      var response = await fetch(url);
+      if (!response.ok) return text; // Return original text if translation fails
+      var data = await response.json();
+      if (data.responseData && data.responseData.translatedText) {
+        return data.responseData.translatedText;
+      }
+      return text;
+    } catch (error) {
+      console.error("Translation fetch failed:", error);
+      return text;
+    }
+  }
+
+  async function renderResult(entries, word, audioUrl) {
     if (!resultEl) return;
     clearStatus();
     resultEl.hidden = false;
+
+    var currentLang = root.getAttribute("lang") || "fa";
+    var isFa = currentLang === "fa";
+
+    // If we are in FA mode, we need to translate the definitions.
+    // We collect all definitions first, translate them in parallel, then build the HTML.
+    var translatedDefinitions = [];
+    if (isFa) {
+      var allDefTexts = [];
+      entries.forEach(function(block) {
+        (block.definitions || []).forEach(function(d) {
+          allDefTexts.push(stripHtml(d.definition));
+        });
+      });
+      
+      // Translate all definitions in parallel
+      translatedDefinitions = await Promise.all(allDefTexts.map(translateToPersian));
+    }
 
     var html = "";
     html += '<div class="word-head">';
     html += '<h2 class="word-title">' + escapeHtml(word) + "</h2>";
     
-    // Inject Audio Button if URL exists
     if (audioUrl) {
       html += '<audio id="dict-audio" src="' + audioUrl + '"></audio>';
       html += '<button type="button" class="audio-btn" onclick="document.getElementById(\'dict-audio\').play()" aria-label="Play pronunciation">';
@@ -784,20 +812,42 @@
     
     html += "</div>";
 
+    var defIndex = 0;
     entries.forEach(function (block) {
       var pos = block.partOfSpeech || "";
       var defs = block.definitions || [];
       if (!defs.length) return;
 
       html += '<div class="pos-block">';
-      if (pos) html += '<span class="pos-label">' + escapeHtml(pos) + "</span>";
+      if (pos) {
+        if (isFa) {
+          // Simple translation for common parts of speech
+          var faPos = pos;
+          if (pos.toLowerCase() === "noun") faPos = "اسم";
+          if (pos.toLowerCase() === "verb") faPos = "فعل";
+          if (pos.toLowerCase() === "adjective") faPos = "صفت";
+          if (pos.toLowerCase() === "adverb") faPos = "قید";
+          if (pos.toLowerCase() === "pronoun") faPos = "ضمیر";
+          if (pos.toLowerCase() === "preposition") faPos = "حرف اضافه";
+          if (pos.toLowerCase() === "conjunction") faPos = "حرف ربط";
+          if (pos.toLowerCase() === "interjection") faPos = "حرف ندا";
+          html += '<span class="pos-label">' + escapeHtml(faPos) + "</span>";
+        } else {
+          html += '<span class="pos-label">' + escapeHtml(pos) + "</span>";
+        }
+      }
       html += '<ol class="definitions-list">';
 
       defs.forEach(function (d) {
         var defText = stripHtml(d.definition);
         if (!defText) return;
-        html += '<li><p class="def-text">' + escapeHtml(defText) + "</p>";
+        
+        var displayDef = isFa ? translatedDefinitions[defIndex] : defText;
+        defIndex++;
 
+        html += '<li><p class="def-text">' + escapeHtml(displayDef) + "</p>";
+
+        // Examples remain in English in both modes, as requested
         var exampleText = "";
         if (d.parsedExamples && d.parsedExamples.length) {
           exampleText = stripHtml(d.parsedExamples[0].example);
@@ -851,7 +901,6 @@
 
     var endpoint = "https://en.wiktionary.org/api/rest_v1/page/definition/" + encodeURIComponent(word);
 
-    // Fetch definitions and audio in parallel
     Promise.all([
       fetchWithTimeout(endpoint, 15000),
       fetchPronunciationAudio(word)
@@ -867,12 +916,13 @@
         return { data: data, audioUrl: audioUrl };
       });
     })
-    .then(function (payload) {
+    .then(async function (payload) {
       var englishEntries = payload.data && payload.data.en;
       if (!englishEntries || !englishEntries.length) {
         throw { kind: "notfound" };
       }
-      renderResult(englishEntries, word, payload.audioUrl);
+      // Wait for translations to finish inside renderResult
+      await renderResult(englishEntries, word, payload.audioUrl);
     })
     .catch(function (err) {
       console.error(err);
