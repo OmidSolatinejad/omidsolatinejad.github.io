@@ -691,7 +691,7 @@
   if (yearEnEl) yearEnEl.textContent = y;
 
   // ============================================================
-  // DICTIONARY LOOKUP — Wiktionary API (wikimedia.org)
+  // DICTIONARY LOOKUP
   // ============================================================
   function updateDictPlaceholder() {
     if (!dictInput) return;
@@ -732,21 +732,40 @@
     statusEl.innerHTML = "";
   }
 
-  // --- Audio Fetching via Wikimedia Commons ---
+  // --- ROBUST Audio Fetching via Wiktionary MediaWiki API ---
   async function fetchPronunciationAudio(word) {
     try {
-      var url = "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:audio%20" + encodeURIComponent(word) + "&gsrnamespace=6&gsrlimit=5&prop=imageinfo&iiprop=url&format=json&origin=*";
+      // Query the Wiktionary page for all media files
+      var url = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(word) + "&prop=images&imlimit=max&format=json&origin=*";
       var response = await fetch(url);
       if (!response.ok) return null;
       var data = await response.json();
-      if (data.query && data.query.pages) {
-        var pages = data.query.pages;
-        for (var key in pages) {
-          var page = pages[key];
-          if (page.imageinfo && page.imageinfo.length > 0) {
-            var fileUrl = page.imageinfo[0].url;
-            if (fileUrl.match(/\.(ogg|mp3|wav)$/i)) {
-              return fileUrl;
+      
+      if (!data.query || !data.query.pages) return null;
+      
+      var pages = data.query.pages;
+      for (var pageId in pages) {
+        var page = pages[pageId];
+        if (!page.images) continue;
+        
+        // Look for an audio file (usually .ogg or .mp3) in the list of images
+        for (var i = 0; i < page.images.length; i++) {
+          var img = page.images[i];
+          var title = img.title;
+          if (title.match(/\.(ogg|mp3|wav)$/i)) {
+            // We found an audio file. Now we need the direct URL.
+            // We can use the imageinfo API to get the URL for this specific file.
+            var fileUrl = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(title) + "&prop=imageinfo&iiprop=url&format=json&origin=*";
+            var fileRes = await fetch(fileUrl);
+            var fileData = await fileRes.json();
+            
+            if (fileData.query && fileData.query.pages) {
+              for (var fId in fileData.query.pages) {
+                var fPage = fileData.query.pages[fId];
+                if (fPage.imageinfo && fPage.imageinfo.length > 0) {
+                  return fPage.imageinfo[0].url;
+                }
+              }
             }
           }
         }
@@ -764,7 +783,7 @@
     try {
       var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=en|fa";
       var response = await fetch(url);
-      if (!response.ok) return text; // Return original text if translation fails
+      if (!response.ok) return text;
       var data = await response.json();
       if (data.responseData && data.responseData.translatedText) {
         return data.responseData.translatedText;
@@ -784,8 +803,6 @@
     var currentLang = root.getAttribute("lang") || "fa";
     var isFa = currentLang === "fa";
 
-    // If we are in FA mode, we need to translate the definitions.
-    // We collect all definitions first, translate them in parallel, then build the HTML.
     var translatedDefinitions = [];
     if (isFa) {
       var allDefTexts = [];
@@ -794,8 +811,6 @@
           allDefTexts.push(stripHtml(d.definition));
         });
       });
-      
-      // Translate all definitions in parallel
       translatedDefinitions = await Promise.all(allDefTexts.map(translateToPersian));
     }
 
@@ -821,7 +836,6 @@
       html += '<div class="pos-block">';
       if (pos) {
         if (isFa) {
-          // Simple translation for common parts of speech
           var faPos = pos;
           if (pos.toLowerCase() === "noun") faPos = "اسم";
           if (pos.toLowerCase() === "verb") faPos = "فعل";
@@ -847,7 +861,6 @@
 
         html += '<li><p class="def-text">' + escapeHtml(displayDef) + "</p>";
 
-        // Examples remain in English in both modes, as requested
         var exampleText = "";
         if (d.parsedExamples && d.parsedExamples.length) {
           exampleText = stripHtml(d.parsedExamples[0].example);
@@ -921,7 +934,6 @@
       if (!englishEntries || !englishEntries.length) {
         throw { kind: "notfound" };
       }
-      // Wait for translations to finish inside renderResult
       await renderResult(englishEntries, word, payload.audioUrl);
     })
     .catch(function (err) {
