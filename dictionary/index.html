@@ -373,9 +373,108 @@
       font-size: 0.8rem;
     }
   }
+
+  /* ============================================================
+     ONBOARDING TUTORIAL STYLES
+     ============================================================ */
+  .tour-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: auto;
+  }
+  .tour-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+  .tour-box {
+    position: fixed;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    z-index: 10000;
+    text-align: center;
+    direction: rtl;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+  }
+  .tour-box.active {
+    display: block;
+  }
+  .tour-box.step-2 {
+    top: 80px; /* Moves near the header */
+    transform: translate(-50%, 0);
+  }
+  .tour-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    color: var(--accent-strong);
+  }
+  .tour-text {
+    font-size: 0.95rem;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.6;
+  }
+  .tour-text.en {
+    direction: ltr;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
+  .tour-btn {
+    margin-top: 1.5rem;
+    border: none;
+    background: #1B4A3D;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.6rem 2rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .tour-btn:hover {
+    background: #2F6F5E;
+  }
+  /* Spotlight effect for the EN/FA button */
+  .tour-spotlight {
+    position: fixed;
+    z-index: 9998;
+    border-radius: 999px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+    display: none;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
+
+<!-- ONBOARDING TUTORIAL OVERLAY -->
+<div class="tour-overlay" id="tour-overlay"></div>
+<div class="tour-box" id="tour-box">
+  <h3 class="tour-title" id="tour-title">به دیکشنری خوش آمدید! / Welcome!</h3>
+  <p class="tour-text" id="tour-text-fa">
+    شما می‌توانید بین دو حالت دیکشنری انگلیسی به انگلیسی (EN) و انگلیسی به فارسی (FA) جابه‌جا شوید.
+  </p>
+  <p class="tour-text en" id="tour-text-en">
+    You can switch between English-to-English (EN) and English-to-Persian (FA) dictionaries.
+  </p>
+  <button class="tour-btn" id="tour-btn">تایید / OK</button>
+</div>
+<div class="tour-spotlight" id="tour-spotlight"></div>
+
+
 <a href="#main" class="skip-link">
   <span class="lang-fa">پرش به محتوای اصلی</span>
   <span class="lang-en">Skip to main content</span>
@@ -404,7 +503,7 @@
     </nav>
 
     <div class="header-controls">
-      <div class="lang-switch" role="group" aria-label="زبان / Language">
+      <div class="lang-switch" id="tour-target" role="group" aria-label="زبان / Language">
         <button type="button" class="lang-option" id="lang-option-fa" data-lang-option="fa" aria-pressed="true">FA</button>
         <span class="lang-sep" aria-hidden="true">|</span>
         <button type="button" class="lang-option" id="lang-option-en" data-lang-option="en" aria-pressed="false">EN</button>
@@ -691,6 +790,57 @@
   if (yearEnEl) yearEnEl.textContent = y;
 
   // ============================================================
+  // ONBOARDING TUTORIAL LOGIC
+  // ============================================================
+  var tourOverlay = document.getElementById("tour-overlay");
+  var tourBox = document.getElementById("tour-box");
+  var tourBtn = document.getElementById("tour-btn");
+  var tourSpotlight = document.getElementById("tour-spotlight");
+  var tourTarget = document.getElementById("tour-target");
+
+  // Check if user has already seen the tour in this session
+  if (!sessionStorage.getItem("dict-tour-seen")) {
+    
+    // Step 1: Show Welcome Box
+    setTimeout(function() {
+      tourOverlay.classList.add("active");
+      tourBox.classList.add("active");
+    }, 500); // Slight delay for a smoother page load
+
+    tourBtn.addEventListener("click", function() {
+      if (tourBtn.getAttribute("data-step") === "2") {
+        // Finish Tour
+        tourOverlay.classList.remove("active");
+        tourBox.classList.remove("active");
+        tourSpotlight.style.display = "none";
+        sessionStorage.setItem("dict-tour-seen", "true");
+      } else {
+        // Move to Step 2: Spotlight on EN/FA
+        tourBtn.setAttribute("data-step", "2");
+        
+        // Change text
+        document.getElementById("tour-title").innerHTML = "تغییر زبان / Switch Language";
+        document.getElementById("tour-text-fa").innerHTML = "برای تغییر بین دیکشنری انگلیسی-انگلیسی و انگلیسی-فارسی، روی این دکمه کلیک کنید.";
+        document.getElementById("tour-text-en").innerHTML = "Click this button to switch between the English-English and English-Persian dictionaries.";
+        tourBtn.innerHTML = "متوجه شدم / Got it";
+
+        // Position the box near the button
+        tourBox.classList.add("step-2");
+
+        // Create the spotlight hole
+        var rect = tourTarget.getBoundingClientRect();
+        var padding = 8;
+        
+        tourSpotlight.style.top = (rect.top - padding) + "px";
+        tourSpotlight.style.left = (rect.left - padding) + "px";
+        tourSpotlight.style.width = (rect.width + (padding * 2)) + "px";
+        tourSpotlight.style.height = (rect.height + (padding * 2)) + "px";
+        tourSpotlight.style.display = "block";
+      }
+    });
+  }
+
+  // ============================================================
   // DICTIONARY LOOKUP
   // ============================================================
   function updateDictPlaceholder() {
@@ -732,10 +882,9 @@
     statusEl.innerHTML = "";
   }
 
-  // --- Fetch Audio via Wiktionary MediaWiki API (Filtering for US accent) ---
+  // --- Fetch Audio via Wiktionary MediaWiki API ---
   async function fetchPronunciationAudio(word) {
     try {
-      // 1. Get the list of all images/files on the word's page
       var url = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(word) + "&prop=images&imlimit=max&format=json&origin=*";
       var response = await fetch(url);
       if (!response.ok) return null;
@@ -746,7 +895,6 @@
       var pages = data.query.pages;
       var audioTitles = [];
       
-      // 2. Find all audio files
       for (var pageId in pages) {
         var page = pages[pageId];
         if (!page.images) continue;
@@ -761,8 +909,7 @@
       
       if (audioTitles.length === 0) return null;
       
-      // 3. Try to find an American accent first (usually contains "en-us" or "us")
-      var chosenTitle = audioTitles[0]; // default to first
+      var chosenTitle = audioTitles[0];
       for (var j = 0; j < audioTitles.length; j++) {
         if (audioTitles[j].toLowerCase().indexOf("us") !== -1 || audioTitles[j].toLowerCase().indexOf("en-us") !== -1) {
           chosenTitle = audioTitles[j];
@@ -770,7 +917,6 @@
         }
       }
       
-      // 4. Get the direct URL for the chosen file
       var fileUrl = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(chosenTitle) + "&prop=imageinfo&iiprop=url&format=json&origin=*";
       var fileRes = await fetch(fileUrl);
       var fileData = await fileRes.json();
