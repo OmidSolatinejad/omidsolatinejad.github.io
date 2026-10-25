@@ -732,45 +732,39 @@
     statusEl.innerHTML = "";
   }
 
-  // --- ROBUST Audio Fetching via Wiktionary MediaWiki API ---
+  // --- NEW: Fetch Audio from Free Dictionary API (Prioritizing US accent) ---
   async function fetchPronunciationAudio(word) {
     try {
-      // Query the Wiktionary page for all media files
-      var url = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(word) + "&prop=images&imlimit=max&format=json&origin=*";
+      // We use the Free Dictionary API for standardized audio
+      var url = "https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word);
       var response = await fetch(url);
       if (!response.ok) return null;
+      
       var data = await response.json();
+      if (!data || !data[0] || !data[0].phonetics) return null;
       
-      if (!data.query || !data.query.pages) return null;
+      var phonetics = data[0].phonetics;
+      var audioUrl = null;
       
-      var pages = data.query.pages;
-      for (var pageId in pages) {
-        var page = pages[pageId];
-        if (!page.images) continue;
-        
-        // Look for an audio file (usually .ogg or .mp3) in the list of images
-        for (var i = 0; i < page.images.length; i++) {
-          var img = page.images[i];
-          var title = img.title;
-          if (title.match(/\.(ogg|mp3|wav)$/i)) {
-            // We found an audio file. Now we need the direct URL.
-            // We can use the imageinfo API to get the URL for this specific file.
-            var fileUrl = "https://en.wiktionary.org/w/api.php?action=query&titles=" + encodeURIComponent(title) + "&prop=imageinfo&iiprop=url&format=json&origin=*";
-            var fileRes = await fetch(fileUrl);
-            var fileData = await fileRes.json();
-            
-            if (fileData.query && fileData.query.pages) {
-              for (var fId in fileData.query.pages) {
-                var fPage = fileData.query.pages[fId];
-                if (fPage.imageinfo && fPage.imageinfo.length > 0) {
-                  return fPage.imageinfo[0].url;
-                }
-              }
-            }
+      // 1. Try to find a US accent audio first
+      for (var i = 0; i < phonetics.length; i++) {
+        if (phonetics[i].audio && phonetics[i].audio.includes("-us.mp3")) {
+          audioUrl = phonetics[i].audio;
+          break;
+        }
+      }
+      
+      // 2. If no US accent found, just take the first available audio
+      if (!audioUrl) {
+        for (var j = 0; j < phonetics.length; j++) {
+          if (phonetics[j].audio) {
+            audioUrl = phonetics[j].audio;
+            break;
           }
         }
       }
-      return null;
+      
+      return audioUrl;
     } catch (error) {
       console.error("Audio fetch failed:", error);
       return null;
